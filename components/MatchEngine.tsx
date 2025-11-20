@@ -23,7 +23,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   const [isVarChecking, setIsVarChecking] = useState(false);
 
   const calculateTeamStrength = (players: Player[]) => {
-    if (players.length === 0) return 0;
+    if (!players || players.length === 0) return 0;
     const total = players.reduce((acc, p) => acc + p.rating, 0);
     return total / players.length;
   };
@@ -88,7 +88,12 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   };
 
   const handleGoalEvent = async (minute: number, isUserGoal: boolean, teamName: string, roster: Player[]) => {
-      const scorer = roster[Math.floor(Math.random() * roster.length)].name;
+      let scorer = "Jogador Desconhecido";
+      
+      if (roster && roster.length > 0) {
+          const randomPlayer = roster[Math.floor(Math.random() * roster.length)];
+          if (randomPlayer) scorer = randomPlayer.name;
+      }
       
       // Initial Goal Announcement
       addLog(`${minute}' - GOOOOL DO ${teamName.toUpperCase()}! ${scorer} balança a rede!`);

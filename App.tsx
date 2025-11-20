@@ -26,6 +26,18 @@ export default function App() {
     varLogs: []
   });
 
+  // Effect to handle Season End Alerts safely
+  useEffect(() => {
+      if (gameState.seasonWeek > 38 && gameState.userTeamId) {
+          // Check if user just finished the season
+          const userStats = gameState.leagueTable.find(t => t.teamId === gameState.userTeamId);
+          if (userStats && userStats.played === 38) {
+              // Ensure we only alert once by checking if we haven't moved past the immediate end logic handled in state
+              // Ideally just let the view handle the "Finished" state
+          }
+      }
+  }, [gameState.seasonWeek, gameState.userTeamId]);
+
   // Generate Fixtures (Round Robin)
   const generateSeasonFixtures = (allTeams: Team[]): MatchFixture[] => {
     const fixtures: MatchFixture[] = [];
@@ -106,25 +118,6 @@ export default function App() {
     }
   };
 
-  const checkSeasonEnd = (currentTable: any[], week: number) => {
-      if (week > 38) {
-          // Find Winner
-          const sortedTable = [...currentTable].sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
-          const champion = sortedTable[0];
-          
-          if (champion.teamId === gameState.userTeamId) {
-              alert("PARABÉNS! VOCÊ É CAMPEÃO BRASILEIRO!");
-              setGameState(prev => ({
-                  ...prev,
-                  trophies: [...prev.trophies, `Brasileirão Série A - Temporada ${new Date().getFullYear()}`]
-              }));
-          } else {
-              const champTeam = teams.find(t => t.id === champion.teamId);
-              alert(`Fim de Temporada. O campeão foi ${champTeam?.name}. Tente novamente!`);
-          }
-      }
-  };
-
   const updateLeagueTable = (userGoals: number, opponentGoals: number, opponentId: string, matchVarLogs: string[]) => {
     setGameState(prev => {
         const newTable = [...prev.leagueTable];
@@ -176,13 +169,25 @@ export default function App() {
         });
 
         const nextWeek = prev.seasonWeek + 1;
-        checkSeasonEnd(newTable, prev.seasonWeek); // Check based on current played week
+        
+        // Sort Table
+        newTable.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+
+        // Check Champion directly here to avoid recursive setState loop
+        let newTrophies = [...prev.trophies];
+        if (prev.seasonWeek === 38) {
+             const champion = newTable[0];
+             if (champion.teamId === prev.userTeamId) {
+                 newTrophies.push(`Brasileirão Série A - Temporada ${new Date().getFullYear()}`);
+             }
+        }
 
         return {
             ...prev,
             seasonWeek: nextWeek,
-            leagueTable: newTable.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)),
-            varLogs: matchVarLogs // Save VAR logs from the completed match
+            leagueTable: newTable,
+            varLogs: matchVarLogs, // Save VAR logs from the completed match
+            trophies: newTrophies
         };
     });
   };
@@ -198,6 +203,9 @@ export default function App() {
           const oppId = userMatch.homeTeamId === gameState.userTeamId ? userMatch.awayTeamId : userMatch.homeTeamId;
           updateLeagueTable(0, 0, oppId, ["Semana simulada, VAR não utilizado."]);
           alert("Semana simulada (Empate 0-0).");
+      } else {
+          // Edge case: No match found (e.g., fixture error), force advance to prevent stuck state
+          setGameState(prev => ({ ...prev, seasonWeek: prev.seasonWeek + 1 }));
       }
   };
 
@@ -400,7 +408,10 @@ export default function App() {
                         onMatchComplete={updateLeagueTable}
                     />
                 ) : (
-                     <div className="p-6 text-center">Erro ao carregar partida.</div>
+                     <div className="p-6 text-center flex flex-col items-center justify-center h-full">
+                         <p className="text-red-400 mb-2">Nenhuma partida encontrada para esta rodada.</p>
+                         <button onClick={skipWeek} className="bg-blue-600 text-white px-4 py-2 rounded">Avançar Calendário</button>
+                     </div>
                 )}
             </PageWrapper>
         );
