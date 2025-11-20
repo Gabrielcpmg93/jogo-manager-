@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Team, Player } from '../types';
 import { generateMatchCommentary } from '../services/geminiService';
-import { Play, SkipForward, Activity, MonitorPlay, Timer } from 'lucide-react';
+import { Play, SkipForward, Activity, MonitorPlay, Timer, AlertTriangle } from 'lucide-react';
 
 interface MatchEngineProps {
   userTeamName: string;
@@ -22,8 +22,25 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   const [currentMinute, setCurrentMinute] = useState(0);
   const [isVarChecking, setIsVarChecking] = useState(false);
 
+  // Safety check for corrupted data
+  if (!opponent || !opponent.roster) {
+      return (
+          <div className="p-6 text-center bg-slate-800 rounded-xl border border-red-500">
+              <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-2" />
+              <h3 className="text-white font-bold">Erro nos dados da partida</h3>
+              <p className="text-gray-400 mb-4">Os dados do time adversário estão corrompidos.</p>
+              <button 
+                  onClick={() => onMatchComplete(0, 0, opponent?.id || 'unknown', ["Partida cancelada por erro de dados"])}
+                  className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                  Cancelar Partida (W.O.)
+              </button>
+          </div>
+      );
+  }
+
   const calculateTeamStrength = (players: Player[]) => {
-    if (!players || players.length === 0) return 0;
+    if (!players || players.length === 0) return 50; // Default strength if empty
     const total = players.reduce((acc, p) => acc + p.rating, 0);
     return total / players.length;
   };
@@ -35,8 +52,11 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   const playHalf = async (startMin: number, endMin: number, isSecondHalf: boolean) => {
     setPhase(isSecondHalf ? '2nd_half' : '1st_half');
     
-    const userStrength = calculateTeamStrength(userSquad);
-    const oppStrength = calculateTeamStrength(opponent.roster);
+    const safeUserSquad = userSquad || [];
+    const safeOppRoster = opponent.roster || [];
+
+    const userStrength = calculateTeamStrength(safeUserSquad);
+    const oppStrength = calculateTeamStrength(safeOppRoster);
     
     // Advantage factor
     const userLuck = Math.random() * 10;
@@ -59,9 +79,9 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
         if (eventRoll > 0.6) { // Significant event chance
             // Goal Chance logic
             if (userTotal > oppTotal && Math.random() > 0.45) {
-                await handleGoalEvent(minute, true, userTeamName, userSquad);
+                await handleGoalEvent(minute, true, userTeamName, safeUserSquad);
             } else if (oppTotal > userTotal && Math.random() > 0.45) {
-                await handleGoalEvent(minute, false, opponent.name, opponent.roster);
+                await handleGoalEvent(minute, false, opponent.name, safeOppRoster);
             } else {
                 addLog(`${minute}' - Chute perigoso para fora!`);
             }
@@ -92,7 +112,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
       
       if (roster && roster.length > 0) {
           const randomPlayer = roster[Math.floor(Math.random() * roster.length)];
-          if (randomPlayer) scorer = randomPlayer.name;
+          if (randomPlayer && randomPlayer.name) scorer = randomPlayer.name;
       }
       
       // Initial Goal Announcement

@@ -6,7 +6,54 @@ import { MarketPlace } from './components/MarketPlace';
 import { MatchEngine } from './components/MatchEngine';
 import { MainMenu } from './components/MainMenu';
 import { TeamSelection } from './components/TeamSelection';
-import { Trophy, ArrowLeft, DollarSign, TrendingDown, TrendingUp, Award, Video, AlertCircle } from 'lucide-react';
+import { Trophy, ArrowLeft, DollarSign, TrendingDown, TrendingUp, Award, Video, AlertCircle, RefreshCw } from 'lucide-react';
+
+// Define types for ErrorBoundary
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+// Error Boundary to catch crashes and prevent "Blue Screen"
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: any): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Critical App Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
+          <AlertCircle className="w-20 h-20 text-red-500 mb-6" />
+          <h1 className="text-3xl font-bold mb-4 text-white">Ops! Ocorreu um erro.</h1>
+          <p className="mb-8 text-gray-400 max-w-md">
+            O jogo encontrou um problema inesperado. Não se preocupe, seu progresso foi salvo até o último ponto seguro.
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition-all shadow-lg hover:shadow-blue-500/20"
+          >
+            <RefreshCw className="w-5 h-5" /> Reiniciar Jogo
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [view, setView] = useState<AppView>('select_team');
@@ -26,18 +73,6 @@ export default function App() {
     varLogs: []
   });
 
-  // Effect to handle Season End Alerts safely
-  useEffect(() => {
-      if (gameState.seasonWeek > 38 && gameState.userTeamId) {
-          // Check if user just finished the season
-          const userStats = gameState.leagueTable.find(t => t.teamId === gameState.userTeamId);
-          if (userStats && userStats.played === 38) {
-              // Ensure we only alert once by checking if we haven't moved past the immediate end logic handled in state
-              // Ideally just let the view handle the "Finished" state
-          }
-      }
-  }, [gameState.seasonWeek, gameState.userTeamId]);
-
   // Generate Fixtures (Round Robin)
   const generateSeasonFixtures = (allTeams: Team[]): MatchFixture[] => {
     const fixtures: MatchFixture[] = [];
@@ -45,6 +80,8 @@ export default function App() {
     const numberOfTeams = teamIds.length;
     const rounds = (numberOfTeams - 1) * 2; // Home and Away
     const matchesPerRound = numberOfTeams / 2;
+
+    if (numberOfTeams < 2) return [];
 
     let tempTeams = [...teamIds];
     // Remove the first team to keep it fixed in round robin algorithm
@@ -54,7 +91,6 @@ export default function App() {
         const isSecondHalf = round >= (rounds / 2);
         
         // Pairings for this round
-        // First pair involves the fixed team
         const home1 = isSecondHalf ? tempTeams[tempTeams.length - 1] : fixedTeam;
         const away1 = isSecondHalf ? fixedTeam : tempTeams[tempTeams.length - 1];
         
@@ -64,10 +100,11 @@ export default function App() {
             const t1 = tempTeams[i];
             const t2 = tempTeams[tempTeams.length - 2 - i];
             
-            const home = isSecondHalf ? t2 : t1;
-            const away = isSecondHalf ? t1 : t2;
-
-            fixtures.push({ week: round + 1, homeTeamId: home, awayTeamId: away, played: false });
+            if (t1 && t2) {
+                const home = isSecondHalf ? t2 : t1;
+                const away = isSecondHalf ? t1 : t2;
+                fixtures.push({ week: round + 1, homeTeamId: home, awayTeamId: away, played: false });
+            }
         }
 
         // Rotate array
@@ -120,7 +157,9 @@ export default function App() {
 
   const updateLeagueTable = (userGoals: number, opponentGoals: number, opponentId: string, matchVarLogs: string[]) => {
     setGameState(prev => {
-        const newTable = [...prev.leagueTable];
+        // Safety check to ensure leagueTable exists
+        const safeTable = prev.leagueTable || [];
+        const newTable = safeTable.map(entry => ({ ...entry }));
         
         // Update User Team
         const userStats = newTable.find(t => t.teamId === prev.userTeamId);
@@ -148,7 +187,6 @@ export default function App() {
         const otherMatches = prev.fixtures.filter(f => f.week === prev.seasonWeek && f.homeTeamId !== prev.userTeamId && f.awayTeamId !== prev.userTeamId);
         
         otherMatches.forEach(match => {
-            // Simple simulation logic for other teams
             const g1 = Math.floor(Math.random() * 4);
             const g2 = Math.floor(Math.random() * 4);
             
@@ -173,11 +211,11 @@ export default function App() {
         // Sort Table
         newTable.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
 
-        // Check Champion directly here to avoid recursive setState loop
+        // Check Champion
         let newTrophies = [...prev.trophies];
         if (prev.seasonWeek === 38) {
              const champion = newTable[0];
-             if (champion.teamId === prev.userTeamId) {
+             if (champion && champion.teamId === prev.userTeamId) {
                  newTrophies.push(`Brasileirão Série A - Temporada ${new Date().getFullYear()}`);
              }
         }
@@ -186,7 +224,7 @@ export default function App() {
             ...prev,
             seasonWeek: nextWeek,
             leagueTable: newTable,
-            varLogs: matchVarLogs, // Save VAR logs from the completed match
+            varLogs: matchVarLogs || [], // Ensure never undefined
             trophies: newTrophies
         };
     });
@@ -197,14 +235,17 @@ export default function App() {
           alert("A temporada acabou!");
           return;
       }
-      // Simulate user match as 0-0 draw if skipped
+      
+      // Find user match safely
       const userMatch = gameState.fixtures.find(f => f.week === gameState.seasonWeek && (f.homeTeamId === gameState.userTeamId || f.awayTeamId === gameState.userTeamId));
+      
       if (userMatch) {
           const oppId = userMatch.homeTeamId === gameState.userTeamId ? userMatch.awayTeamId : userMatch.homeTeamId;
           updateLeagueTable(0, 0, oppId, ["Semana simulada, VAR não utilizado."]);
           alert("Semana simulada (Empate 0-0).");
       } else {
-          // Edge case: No match found (e.g., fixture error), force advance to prevent stuck state
+          // If no match is found for user (bug or odd number of teams), advance anyway to avoid stuck state
+          console.warn("Fixture not found for user in week", gameState.seasonWeek);
           setGameState(prev => ({ ...prev, seasonWeek: prev.seasonWeek + 1 }));
       }
   };
@@ -259,7 +300,7 @@ export default function App() {
                                             <td className={`px-3 py-3 font-bold ${index === 0 ? 'text-yellow-400' : ''}`}>{index + 1}</td>
                                             <td className="px-3 py-3 font-medium text-white flex items-center gap-2 min-w-[120px]">
                                                 {entry.teamId === gameState.userTeamId && <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>}
-                                                <span className="truncate">{team?.name}</span>
+                                                <span className="truncate">{team?.name || 'Time Desconhecido'}</span>
                                             </td>
                                             <td className="px-3 py-3 font-bold text-white">{entry.points}</td>
                                             <td className="px-3 py-3">{entry.played}</td>
@@ -345,7 +386,7 @@ export default function App() {
                               </div>
                           </div>
 
-                          {gameState.varLogs.length === 0 ? (
+                          {(!gameState.varLogs || gameState.varLogs.length === 0) ? (
                               <div className="text-center py-10 text-gray-500 flex flex-col items-center">
                                   <AlertCircle className="w-12 h-12 mb-2 opacity-30" />
                                   <p>Nenhuma intervenção do VAR registrada na última partida.</p>
@@ -437,7 +478,9 @@ export default function App() {
 
   return (
     <div className="w-full h-screen bg-slate-950 text-gray-100 font-sans overflow-hidden flex flex-col">
-      {renderContent()}
+      <ErrorBoundary>
+        {renderContent()}
+      </ErrorBoundary>
     </div>
   );
 }
