@@ -14,7 +14,6 @@ interface ErrorBoundaryState {
 
 // Global Error Boundary
 // Uses inline SVGs and styles to ensure it renders even if external libraries (like lucide-react) fail to load.
-// Fixed: Explicitly extend React.Component and add constructor to resolve 'props' property missing error.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = { hasError: false, error: null };
   public props: ErrorBoundaryProps;
@@ -42,13 +41,18 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
           alignItems: 'center',
           justifyContent: 'center',
           height: '100vh',
-          backgroundColor: '#0f172a',
+          backgroundColor: '#0f172a', // Safe background color
           color: '#f8fafc',
           fontFamily: 'sans-serif',
           padding: '20px',
-          textAlign: 'center'
+          textAlign: 'center',
+          zIndex: 9999, // Ensure it's on top
+          position: 'fixed', // Ensure it covers everything
+          top: 0,
+          left: 0,
+          width: '100%'
         }}>
-          {/* Inline SVG for Alert Icon */}
+          {/* Inline SVG for Alert Icon - Dependency Free */}
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '20px' }}>
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -57,18 +61,21 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
           
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>Ops! Ocorreu um erro crítico.</h1>
           <p style={{ color: '#94a3b8', marginBottom: '30px', maxWidth: '400px' }}>
-            O aplicativo encontrou um problema e precisou ser interrompido para evitar travamentos maiores.
+            O jogo encontrou um problema inesperado.
           </p>
           
           <details style={{ marginBottom: '20px', color: '#64748b', fontSize: '12px', textAlign: 'left', maxWidth: '90%', backgroundColor: '#1e293b', padding: '10px', borderRadius: '4px', overflow: 'auto' }}>
-             <summary>Detalhes do erro (Técnico)</summary>
+             <summary>Ver erro técnico</summary>
              <pre style={{ marginTop: '10px', whiteSpace: 'pre-wrap' }}>
                 {this.state.error?.toString()}
              </pre>
           </details>
           
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => {
+               // Clear local storage if needed or just reload
+               window.location.href = '/'; 
+            }} 
             style={{
               backgroundColor: '#2563eb',
               color: 'white',
@@ -101,7 +108,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  // This error will be caught by the browser's default handler, not React's boundary
   throw new Error("Could not find root element to mount to");
 }
 

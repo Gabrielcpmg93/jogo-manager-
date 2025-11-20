@@ -399,13 +399,13 @@ export default function App() {
             <PageWrapper title={`Rodada ${gameState.seasonWeek}`}>
                 {opponent ? (
                     <MatchEngine 
-                        key={gameState.seasonWeek} // FORCE REMOUNT ON NEW WEEK TO RESET STATE
+                        key={gameState.seasonWeek} // CRITICAL FIX: Force component reset on new week to avoid stale state crash
                         userTeamName={teams.find(t => t.id === gameState.userTeamId)?.name || "Meu Time"} 
                         userSquad={gameState.myPlayers}
                         opponent={opponent} 
                         onMatchComplete={(userGoals, oppGoals, oppId, varLogs) => {
                             updateLeagueTable(userGoals, oppGoals, oppId, varLogs);
-                            setView('menu'); // Navigate back to menu after match finishes
+                            setView('menu'); // Navigate safely back to menu
                         }}
                     />
                 ) : (

@@ -2,7 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 
 const getAiClient = () => {
   try {
-    // Safety check for process.env to prevent ReferenceError in some browser environments
+    // Safety check for process.env to prevent ReferenceError in some browser environments/Vercel
+    // This prevents the "Blue Screen" crash if env vars are missing on client side
     const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
     
     if (!apiKey) {
