@@ -6,54 +6,7 @@ import { MarketPlace } from './components/MarketPlace';
 import { MatchEngine } from './components/MatchEngine';
 import { MainMenu } from './components/MainMenu';
 import { TeamSelection } from './components/TeamSelection';
-import { Trophy, ArrowLeft, DollarSign, TrendingDown, TrendingUp, Award, Video, AlertCircle, RefreshCw } from 'lucide-react';
-
-// Define types for ErrorBoundary
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-// Error Boundary to catch crashes and prevent "Blue Screen"
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: any, errorInfo: any) {
-    console.error("Critical App Error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-6 text-center">
-          <AlertCircle className="w-20 h-20 text-red-500 mb-6" />
-          <h1 className="text-3xl font-bold mb-4 text-white">Ops! Ocorreu um erro.</h1>
-          <p className="mb-8 text-gray-400 max-w-md">
-            O jogo encontrou um problema inesperado. Não se preocupe, seu progresso foi salvo até o último ponto seguro.
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition-all shadow-lg hover:shadow-blue-500/20"
-          >
-            <RefreshCw className="w-5 h-5" /> Reiniciar Jogo
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import { Trophy, ArrowLeft, DollarSign, TrendingDown, TrendingUp, Award, Video, AlertCircle } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<AppView>('select_team');
@@ -435,9 +388,12 @@ export default function App() {
             f => f.week === gameState.seasonWeek && (f.homeTeamId === gameState.userTeamId || f.awayTeamId === gameState.userTeamId)
         );
 
-        // Determine Opponent
-        const opponentId = currentMatch?.homeTeamId === gameState.userTeamId ? currentMatch?.awayTeamId : currentMatch?.homeTeamId;
-        const opponent = teams.find(t => t.id === opponentId);
+        // Determine Opponent with safety checks
+        let opponent: Team | undefined;
+        if (currentMatch) {
+            const opponentId = currentMatch.homeTeamId === gameState.userTeamId ? currentMatch.awayTeamId : currentMatch.homeTeamId;
+            opponent = teams.find(t => t.id === opponentId);
+        }
 
         return (
             <PageWrapper title={`Rodada ${gameState.seasonWeek}`}>
@@ -445,7 +401,7 @@ export default function App() {
                     <MatchEngine 
                         userTeamName={teams.find(t => t.id === gameState.userTeamId)?.name || "Meu Time"} 
                         userSquad={gameState.myPlayers}
-                        opponent={opponent} // Pass single opponent
+                        opponent={opponent} 
                         onMatchComplete={updateLeagueTable}
                     />
                 ) : (
@@ -478,9 +434,7 @@ export default function App() {
 
   return (
     <div className="w-full h-screen bg-slate-950 text-gray-100 font-sans overflow-hidden flex flex-col">
-      <ErrorBoundary>
-        {renderContent()}
-      </ErrorBoundary>
+      {renderContent()}
     </div>
   );
 }

@@ -21,6 +21,15 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   const [isThinking, setIsThinking] = useState(false);
   const [currentMinute, setCurrentMinute] = useState(0);
   const [isVarChecking, setIsVarChecking] = useState(false);
+  
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+        isMounted.current = false;
+    };
+  }, []);
 
   // Safety check for corrupted data
   if (!opponent || !opponent.roster) {
@@ -46,10 +55,12 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   };
 
   const addLog = (msg: string) => {
+      if (!isMounted.current) return;
       setLogs(prev => [msg, ...prev]); // Newest first
   };
 
   const playHalf = async (startMin: number, endMin: number, isSecondHalf: boolean) => {
+    if (!isMounted.current) return;
     setPhase(isSecondHalf ? '2nd_half' : '1st_half');
     
     const safeUserSquad = userSquad || [];
@@ -70,9 +81,13 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
     const interval = (endMin - startMin) / eventsPerHalf;
 
     for (let i = 1; i <= eventsPerHalf; i++) {
+        if (!isMounted.current) return;
+
         const minute = Math.floor(startMin + (i * interval) - (Math.random() * 5));
         setCurrentMinute(minute);
         await new Promise(resolve => setTimeout(resolve, 1200)); // Delay for pacing
+        
+        if (!isMounted.current) return;
 
         const eventRoll = Math.random();
         
@@ -96,6 +111,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
         }
     }
 
+    if (!isMounted.current) return;
     setCurrentMinute(endMin);
     
     if (isSecondHalf) {
@@ -108,6 +124,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   };
 
   const handleGoalEvent = async (minute: number, isUserGoal: boolean, teamName: string, roster: Player[]) => {
+      if (!isMounted.current) return;
       let scorer = "Jogador Desconhecido";
       
       if (roster && roster.length > 0) {
@@ -123,6 +140,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
           setIsVarChecking(true);
           addLog(`${minute}' - ✋ Árbitro põe a mão no ouvido. VAR em análise...`);
           await new Promise(resolve => setTimeout(resolve, 2000)); // Suspense
+          if (!isMounted.current) return;
           
           // Decision (80% confirm, 20% annul)
           const decisionRoll = Math.random();
@@ -146,6 +164,7 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
   };
 
   const finishMatch = async () => {
+    if (!isMounted.current) return;
     // AI Commentary
     setIsThinking(true);
     const commentary = await generateMatchCommentary(
@@ -155,10 +174,9 @@ export const MatchEngine: React.FC<MatchEngineProps> = ({ userTeamName, userSqua
         score.opponent, 
         logs.slice(0, 10) // Send last 10 logs for context
     );
+    if (!isMounted.current) return;
     setAiCommentary(commentary);
     setIsThinking(false);
-
-    // Wait for user to click exit, but pre-calculate
   };
 
   const handleExit = () => {
