@@ -13,9 +13,7 @@ interface State {
 }
 
 // --- Error Boundary Supremo ---
-// Projetado para capturar erros críticos e permitir que o usuário recupere o app
-// limpando o cache local caso o estado salvo esteja corrompido.
-class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null
@@ -30,10 +28,16 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleHardReset = () => {
-    // Limpa tudo que pode estar travando o app
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.reload();
+    // Limpa localStorage e sessionStorage para remover estados corrompidos
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      console.log('Cache limpo com sucesso.');
+    } catch (e) {
+      console.error('Erro ao limpar cache:', e);
+    }
+    // Força recarregamento do navegador
+    window.location.href = '/';
   };
 
   public render() {
@@ -43,57 +47,69 @@ class ErrorBoundary extends Component<Props, State> {
           position: 'fixed',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#0f172a', // Fundo escuro (Slate 900)
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#020617', // Slate 950 muito escuro
           color: '#f8fafc',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          zIndex: 99999,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          zIndex: 999999,
           padding: '20px',
-          textAlign: 'center'
+          textAlign: 'center',
+          overflow: 'hidden'
         }}>
           <div style={{
             backgroundColor: '#1e293b',
-            padding: '30px',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            padding: '40px',
+            borderRadius: '16px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             maxWidth: '500px',
             width: '100%',
-            border: '1px solid #334155'
+            border: '1px solid #334155',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
           }}>
-            <svg 
-              style={{ width: '64px', height: '64px', marginBottom: '20px', color: '#ef4444' }} 
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <div style={{
+              backgroundColor: '#450a0a',
+              borderRadius: '50%',
+              padding: '16px',
+              marginBottom: '24px'
+            }}>
+              <svg 
+                width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
             
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px', color: '#fff' }}>
-              Algo deu errado
+            <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', color: '#fff' }}>
+              Ops! O jogo travou.
             </h1>
             
-            <p style={{ color: '#94a3b8', marginBottom: '20px', lineHeight: '1.5' }}>
-              Ocorreu um erro inesperado ao carregar o Brasileirão Manager.
-              Isso geralmente acontece se os dados salvos estiverem corrompidos.
+            <p style={{ color: '#94a3b8', marginBottom: '24px', lineHeight: '1.6', fontSize: '16px' }}>
+              Não se preocupe. Isso geralmente acontece quando os dados salvos no navegador conflitam com uma nova atualização.
             </p>
 
-            <div style={{ 
-              backgroundColor: '#0f172a', 
-              padding: '10px', 
-              borderRadius: '6px', 
-              marginBottom: '20px', 
-              textAlign: 'left',
-              maxHeight: '100px',
-              overflow: 'auto',
-              fontSize: '12px',
+            <div style={{
+              width: '100%',
+              backgroundColor: '#0f172a',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid #ef4444',
+              color: '#ef4444',
               fontFamily: 'monospace',
-              color: '#ef4444'
+              fontSize: '12px',
+              textAlign: 'left',
+              marginBottom: '24px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
             }}>
-               {this.state.error?.toString() || "Erro desconhecido"}
+              Erro: {this.state.error?.message || "Erro desconhecido"}
             </div>
 
             <button 
@@ -102,19 +118,22 @@ class ErrorBoundary extends Component<Props, State> {
                 backgroundColor: '#2563eb',
                 color: 'white',
                 border: 'none',
-                padding: '12px 24px',
-                borderRadius: '8px',
+                padding: '16px 32px',
+                borderRadius: '12px',
                 fontSize: '16px',
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 width: '100%',
-                transition: 'background 0.2s'
+                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
+                transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
             >
-              🔄 Limpar Dados e Reiniciar
+              CORRIGIR E REINICIAR ↻
             </button>
+            
+            <p style={{ marginTop: '16px', fontSize: '12px', color: '#64748b' }}>
+              Isso limpará os dados locais e reiniciará o app.
+            </p>
           </div>
         </div>
       );
@@ -124,7 +143,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// --- Inicialização da Aplicação ---
+// --- Inicialização Segura ---
 const container = document.getElementById('root');
 
 if (container) {
@@ -137,6 +156,5 @@ if (container) {
     </React.StrictMode>
   );
 } else {
-  // Fallback caso o DOM não esteja pronto (muito raro, mas previne tela branca total)
-  document.body.innerHTML = '<div style="color: white; text-align: center; padding: 50px;">Erro Fatal: Elemento Root não encontrado.</div>';
+  console.error("Elemento 'root' não encontrado no DOM.");
 }
