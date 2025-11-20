@@ -1,4 +1,4 @@
-import React, { ReactNode, Component } from 'react';
+import React, { ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
@@ -14,7 +14,7 @@ interface ErrorBoundaryState {
 
 // Global Error Boundary
 // Uses inline SVGs and styles to ensure it renders even if external libraries (like lucide-react) fail to load.
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = {
     hasError: false,
     error: null
