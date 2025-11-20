@@ -6,7 +6,7 @@ interface TeamSelectionProps {
   onSelectTeam: (teamId: string) => void;
 }
 
-// Inline SVG components to ensure they always render without external dependencies
+// Ícone SVG Inline Seguro
 const ShieldIcon = ({ className, fill, stroke = "currentColor" }: { className?: string, fill?: string, stroke?: string }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -23,55 +23,63 @@ const ShieldIcon = ({ className, fill, stroke = "currentColor" }: { className?: 
 );
 
 export const TeamSelection: React.FC<TeamSelectionProps> = ({ teams, onSelectTeam }) => {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-green-950 via-slate-900 to-black overflow-y-auto">
-      <div className="min-h-full flex flex-col items-center justify-center p-6">
-        <div className="text-center mb-12 mt-8 animate-fade-in-down">
-          <div className="inline-flex items-center justify-center p-4 rounded-full bg-green-900/30 border border-green-500/30 mb-6 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-            <ShieldIcon className="w-16 h-16 text-green-400" />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tighter drop-shadow-2xl uppercase">
-            Brasileirão <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-yellow-400">Manager</span>
-          </h1>
-          <p className="text-green-100/60 text-lg md:text-xl max-w-lg mx-auto font-medium leading-relaxed">
-            Assuma o comando. Escolha seu time. Conquiste o Brasil.
-          </p>
-        </div>
+  // Fallback de segurança caso não haja times
+  if (!teams || teams.length === 0) {
+    return (
+      <div className="w-full h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
+        <ShieldIcon className="w-16 h-16 text-gray-600 mb-4" />
+        <h2 className="text-xl font-bold">Nenhum time encontrado</h2>
+        <p className="text-gray-400">Reinicie a aplicação para recarregar os dados.</p>
+      </div>
+    );
+  }
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full max-w-7xl pb-12 px-4">
-          {teams.map((team, index) => (
+  return (
+    <div className="min-h-screen w-full bg-slate-950 flex flex-col">
+      {/* Header Fixo */}
+      <div className="py-8 px-4 text-center bg-slate-900 border-b border-slate-800 shadow-lg z-10">
+        <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-2">
+          Brasileirão <span className="text-green-500">Manager</span>
+        </h1>
+        <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto">
+          Escolha sua equipe para iniciar a jornada rumo ao título.
+        </p>
+      </div>
+
+      {/* Área de Rolagem dos Times */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-w-7xl mx-auto">
+          {teams.map((team) => (
             <button
               key={team.id}
               onClick={() => onSelectTeam(team.id)}
-              className="group relative bg-slate-900/40 backdrop-blur-sm hover:bg-slate-800/60 border border-white/5 hover:border-green-500/50 transition-all duration-500 p-6 rounded-3xl flex flex-col items-center hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(34,197,94,0.3)]"
-              style={{ animationDelay: `${index * 50}ms` }} // Staggered animation
+              className="group relative flex flex-col items-center p-6 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-green-500 transition-all duration-200 transform hover:-translate-y-1 shadow-lg"
             >
-              {/* Selection Indicator */}
-              <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-green-500 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-[0_0_15px_rgba(34,197,94,1)] scale-0 group-hover:scale-100"></div>
-              
-              {/* Team Shield Placeholder */}
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-b from-slate-800 to-slate-950 flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-500 border border-slate-700/50 group-hover:border-green-500/30 relative overflow-hidden">
-                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              {/* Círculo do Escudo */}
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-900 border-2 border-slate-600 group-hover:border-green-500 flex items-center justify-center mb-4 shadow-inner transition-colors">
                  <ShieldIcon 
-                    className="w-14 h-14 text-gray-400 group-hover:text-white transition-colors duration-300 drop-shadow-lg" 
+                    className="w-10 h-10 md:w-12 md:h-12 text-slate-400 group-hover:text-green-400 transition-colors" 
                     fill={team.primaryColor} 
-                    stroke="currentColor"
                  />
               </div>
               
-              <span className="font-black text-white text-center text-lg group-hover:text-green-400 transition-colors duration-300 uppercase tracking-wide leading-tight">
+              {/* Nome do Time */}
+              <span className="font-bold text-white text-sm md:text-base text-center uppercase tracking-wide group-hover:text-green-300">
                 {team.name}
               </span>
-              
-              {/* Bottom Bar */}
-              <div className="h-1 w-12 bg-slate-800 mt-6 rounded-full group-hover:w-20 group-hover:bg-green-500 transition-all duration-500"></div>
+
+              {/* Indicador de Seleção */}
+              <div className="mt-4 px-4 py-1 rounded-full bg-slate-900 text-slate-500 text-xs font-bold border border-slate-700 group-hover:bg-green-600 group-hover:text-white group-hover:border-green-500 transition-all">
+                SELECIONAR
+              </div>
             </button>
           ))}
         </div>
-        
-        <div className="text-white/20 text-xs mt-auto mb-6 uppercase tracking-[0.2em] font-bold">
-            Powered by Gemini AI
-        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="py-4 text-center text-slate-600 text-xs uppercase tracking-widest bg-slate-950">
+        Powered by Gemini AI
       </div>
     </div>
   );
