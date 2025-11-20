@@ -1,99 +1,121 @@
-import React, { ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Define types for ErrorBoundary
-interface ErrorBoundaryProps {
+// --- Tipos do Error Boundary ---
+interface Props {
   children?: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error: Error | null;
 }
 
-// Global Error Boundary
-// Uses inline SVGs and styles to ensure it renders even if external libraries (like lucide-react) fail to load.
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  public state: ErrorBoundaryState = {
+// --- Error Boundary Supremo ---
+// Projetado para capturar erros críticos e permitir que o usuário recupere o app
+// limpando o cache local caso o estado salvo esteja corrompido.
+class ErrorBoundary extends Component<Props, State> {
+  public state: State = {
     hasError: false,
     error: null
   };
 
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
-    console.error("Global App Crash:", error, errorInfo);
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('CRITICAL APP CRASH:', error, errorInfo);
   }
 
-  render() {
+  private handleHardReset = () => {
+    // Limpa tudo que pode estar travando o app
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
+  };
+
+  public render() {
     if (this.state.hasError) {
       return (
         <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#0f172a', // Fundo escuro (Slate 900)
+          color: '#f8fafc',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          height: '100vh',
-          backgroundColor: '#0f172a', // Safe background color
-          color: '#f8fafc',
-          fontFamily: 'sans-serif',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          zIndex: 99999,
           padding: '20px',
-          textAlign: 'center',
-          zIndex: 9999, // Ensure it's on top
-          position: 'fixed', // Ensure it covers everything
-          top: 0,
-          left: 0,
-          width: '100%'
+          textAlign: 'center'
         }}>
-          {/* Inline SVG for Alert Icon - Dependency Free */}
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '20px' }}>
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>Ops! Ocorreu um erro crítico.</h1>
-          <p style={{ color: '#94a3b8', marginBottom: '30px', maxWidth: '400px' }}>
-            O jogo encontrou um problema inesperado.
-          </p>
-          
-          <details style={{ marginBottom: '20px', color: '#64748b', fontSize: '12px', textAlign: 'left', maxWidth: '90%', backgroundColor: '#1e293b', padding: '10px', borderRadius: '4px', overflow: 'auto' }}>
-             <summary>Ver erro técnico</summary>
-             <pre style={{ marginTop: '10px', whiteSpace: 'pre-wrap' }}>
-                {this.state.error?.toString()}
-             </pre>
-          </details>
-          
-          <button 
-            onClick={() => {
-               // Clear local storage if needed or just reload
-               window.location.href = '/'; 
-            }} 
-            style={{
-              backgroundColor: '#2563eb',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '16px'
-            }}
-          >
-            {/* Inline SVG for Refresh Icon */}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 4v6h-6"></path>
-              <path d="M1 20v-6h6"></path>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          <div style={{
+            backgroundColor: '#1e293b',
+            padding: '30px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            maxWidth: '500px',
+            width: '100%',
+            border: '1px solid #334155'
+          }}>
+            <svg 
+              style={{ width: '64px', height: '64px', marginBottom: '20px', color: '#ef4444' }} 
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            Reiniciar Jogo
-          </button>
+            
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px', color: '#fff' }}>
+              Algo deu errado
+            </h1>
+            
+            <p style={{ color: '#94a3b8', marginBottom: '20px', lineHeight: '1.5' }}>
+              Ocorreu um erro inesperado ao carregar o Brasileirão Manager.
+              Isso geralmente acontece se os dados salvos estiverem corrompidos.
+            </p>
+
+            <div style={{ 
+              backgroundColor: '#0f172a', 
+              padding: '10px', 
+              borderRadius: '6px', 
+              marginBottom: '20px', 
+              textAlign: 'left',
+              maxHeight: '100px',
+              overflow: 'auto',
+              fontSize: '12px',
+              fontFamily: 'monospace',
+              color: '#ef4444'
+            }}>
+               {this.state.error?.toString() || "Erro desconhecido"}
+            </div>
+
+            <button 
+              onClick={this.handleHardReset}
+              style={{
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                width: '100%',
+                transition: 'background 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            >
+              🔄 Limpar Dados e Reiniciar
+            </button>
+          </div>
         </div>
       );
     }
@@ -102,16 +124,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+// --- Inicialização da Aplicação ---
+const container = document.getElementById('root');
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+} else {
+  // Fallback caso o DOM não esteja pronto (muito raro, mas previne tela branca total)
+  document.body.innerHTML = '<div style="color: white; text-align: center; padding: 50px;">Erro Fatal: Elemento Root não encontrado.</div>';
+}
