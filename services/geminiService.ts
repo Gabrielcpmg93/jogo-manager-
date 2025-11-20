@@ -1,12 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.warn("API_KEY not found in environment variables.");
+  try {
+    // Safety check for process.env to prevent ReferenceError in some browser environments
+    const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
+    
+    if (!apiKey) {
+      console.warn("API_KEY not found in environment variables.");
+      return null;
+    }
+    return new GoogleGenAI({ apiKey });
+  } catch (e) {
+    console.error("Error initializing AI client:", e);
     return null;
   }
-  return new GoogleGenAI({ apiKey });
 };
 
 export const generateMatchCommentary = async (
@@ -17,7 +24,7 @@ export const generateMatchCommentary = async (
   events: string[]
 ): Promise<string> => {
   const ai = getAiClient();
-  if (!ai) return "Erro: API Key não configurada. Configure para ver a narração.";
+  if (!ai) return "Narração indisponível (Chave API não configurada).";
 
   const prompt = `
     Você é um narrador de futebol brasileiro emocionante e energético (estilo Galvão Bueno ou Luis Roberto).
