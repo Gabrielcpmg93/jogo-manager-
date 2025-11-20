@@ -16,8 +16,12 @@ interface ErrorBoundaryState {
 // Uses inline SVGs and styles to ensure it renders even if external libraries (like lucide-react) fail to load.
 // Fixed: Explicitly extend React.Component and add constructor to resolve 'props' property missing error.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = { hasError: false, error: null };
+  public props: ErrorBoundaryProps;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
+    this.props = props;
     this.state = { hasError: false, error: null };
   }
 
